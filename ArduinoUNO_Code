@@ -1,0 +1,88 @@
+#include "max6675.h" 
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+int SO = 12;
+int CS = 10;
+int sck = 13;
+int pflt = 2; // pin for float
+int rlyp = 3; // pin for relay water
+int rlyh = 5; // pin for relay heating element
+const int button = 7;
+int buttonstate = 0;
+MAX6675 module(sck, CS, SO);
+Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire, -1);
+
+
+void setup() { 
+  pinMode(pflt, INPUT_PULLUP);
+  pinMode(rlyp, OUTPUT);
+  pinMode(rlyh, OUTPUT);  
+  Serial.begin(115200);
+  pinMode(button, INPUT);
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  
+if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+  Serial.println(F("SSD1306 allocation failed"));
+  for(;;);
+}
+delay(2000);
+display.clearDisplay();
+display.setTextColor(WHITE);
+}
+
+void loop() {
+  float temperature = module.readCelsius(); 
+
+  buttonstate = digitalRead(button);
+  if (buttonstate == HIGH) {
+    digitalWrite(rlyp,LOW);//This is the button for the solenoid if employers want
+  }
+  
+  if (temperature < 27)
+  {
+    Serial.print("\nturn water OFF - C: ");
+    Serial.print(temperature);
+    Serial.println();
+    digitalWrite(rlyp, HIGH);
+    
+  }
+  else
+  {
+    Serial.println("\nturn water ON - C: ");
+    Serial.print(temperature);
+    Serial.println();
+    digitalWrite(rlyp, LOW);
+    delay(5000);
+  }
+  if (digitalRead(pflt) == LOW)
+  {
+    Serial.println("turn heating ON");
+    digitalWrite(rlyh, HIGH);
+    delay(1500);
+    digitalWrite(rlyh, LOW);
+    
+  }
+  else
+  {
+    Serial.println("turn heating OFF");
+    digitalWrite(rlyh, LOW);
+  }
+   display.setTextSize(1);
+  display.setCursor(0,10);
+  display.print("Temperature: ");
+  display.setTextSize(2);
+  display.setCursor(0,30);
+  display.print(temperature);
+  display.print(" ");
+  display.setTextSize(1);
+  display.cp437(true);
+  display.write(167);
+  display.setTextSize(2);
+  display.print("C");
+  display.display();
+  
+  delay(1000);
+
+  display.clearDisplay();
+
+}
